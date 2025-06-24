@@ -1,0 +1,137 @@
+#!/bin/bash
+
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m' 
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No color
+
+searchVariations () {
+	read -p "Enter a word to search variations > " userWord
+	read -p "Enter the number of differences allowed > " differences
+
+	echo "Processing..."
+
+	wordsInDirectoryNames="$(find . -type d -not -path "./searchAndReplace" -printf "%f\n" 2> /dev/null | grep -Pio '\w+' 2> /dev/null)"
+	wordsInFileNames="$(find . -type f -not -path "./searchAndReplace" -printf "%f\n" 2> /dev/null | grep -Pio '\w+' 2> /dev/null)"
+	wordsInFiles="$(grep --exclude=searchAndReplace -Prioh '\w+' 2> /dev/null)"
+
+	words="$(echo -e "$wordsInDirectoryNames\n$wordsInFileNames\n$wordsInFiles" | sort | uniq)"
+
+	IFS=$'\n' read -a wordsArray -d '' <<< "$words"
+
+	matches=()
+	for word in "${wordsArray[@]}"
+	do
+		cleanWord="$(echo $word | perl -p -e 's/[^a-zA-Z\d]//g')"
+
+		if [[ ${#word} -gt ${#userWord} ]]; then
+			similarities=$((${#userWord}-${#word})) 
+		elif [[ ${#word} -lt ${#userWord} ]]; then
+			similarities=$((${#word}-${#userWord})) 
+		fi
+		
+		for (( i=0; i<${#userWord}; i=i+1 )); do
+			letterUserWord=${userWord:i:1}
+			letterCleanWord=${cleanWord:i:1}
+			if [[ "${letterUserWord,,}" == "${letterCleanWord,,}" ]]; then
+				similarities=$((similarities+1))
+			fi
+
+			if [[ $similarities -ge $((${#userWord}-$differences)) ]]; then
+				if [[ ! " ${matches[*]} " =~ [[:space:]]${word}[[:space:]] ]]; then
+					matches+=($word)
+				fi
+			fi
+		done
+	done
+
+	echo -e "${GREEN}The variations are: ${matches[*]}${NC}"
+	read -p "Press enter to return to the menu "
+}
+
+searchAndReplace () {
+	read -p "Enter each pair of the value to search and their replacement (e.g. cats dogs houses mansions) > " -a values
+
+	echo "Processing..."
+
+	declare -A valuesToSearchAndReplacements
+	for (( i=0; i<=${#values[@]}-2; i=i+2 )); do
+		valuesToSearchAndReplacements["${values[i]}"]="${values[$((i+1))]}"
+	done
+
+	lengthOfKeysAndKeys=""
+	for k in "${!valuesToSearchAndReplacements[@]}"
+	do
+		lengthOfKeysAndKeys="${lengthOfKeysAndKeys}${#k} ${k}\n"
+	done
+
+	sortedKeys="$(echo -e "$lengthOfKeysAndKeys" | perl -p -e 's/^\n$//g' | sort -nr -k1 | cut -d ' ' -f 2)"
+
+	IFS=$'\n' read -a sortedKeysArray -d '' <<< "$sortedKeys"
+
+	for sortedKey in "${sortedKeysArray[@]}"
+	do
+		textToReplace="$sortedKey"
+		replacement="${valuesToSearchAndReplacements["$sortedKey"]}"
+
+	# Change the name of directories
+	hasErrors="true"
+	while [ "$hasErrors" = "true" ]
+	do
+		find . -iname '*' -type d -not -path "./searchAndReplace" -exec rename "s/$textToReplace/$replacement/g" {} \; 2> /dev/null
+
+		if [[ "$?" -eq 0 ]]; then
+			hasErrors="false"
+		fi
+	done
+
+	# Change the name of files
+	hasErrors="true"
+	while [ "$hasErrors" = "true" ]
+	do
+		find . -iname '*' -type f -not -path "./searchAndReplace" -exec rename "s/$textToReplace/$replacement/g" {} \; 2> /dev/null
+
+		if [[ "$?" -eq 0 ]]; then
+			hasErrors="false"
+		fi
+	done
+
+	# Change the text inside of files
+	hasErrors="true"
+	while [ "$hasErrors" = "true" ]
+	do
+		find . -iname '*' -type f -not -path "./searchAndReplace" -exec perl -p -i -e "s/$textToReplace/$replacement/g" {} \; 2> /dev/null
+
+		if [[ "$?" -eq 0 ]]; then
+			hasErrors="false"
+		fi
+	done
+done
+echo -e "${GREEN}Replacement ready!${NC}"
+read -p "Press enter to return to the menu "
+}
+
+while true; do
+	clear
+	cat <<- _EOF_
+		Please Select:
+
+		1. Search variations
+		2. Search and replace
+
+	_EOF_
+
+	read -p "Enter selection [1-2] > " selection
+
+	if [[ "$selection" =~ ^[1-2]$ ]]; then
+		if [[ "$selection" -eq 1 ]]; then
+			searchVariations
+		else 
+			searchAndReplace
+		fi
+	else 
+		echo -e "${RED}Invalid entry${NC}"
+		sleep 3
+	fi
+done
