@@ -25,12 +25,7 @@ searchVariations () {
 	do
 		cleanWord="$(echo $word | perl -p -e 's/[^a-zA-Z\d]//g')"
 
-		if [[ ${#word} -gt ${#userWord} ]]; then
-			similarities=$((${#userWord}-${#word})) 
-		elif [[ ${#word} -lt ${#userWord} ]]; then
-			similarities=$((${#word}-${#userWord})) 
-		fi
-		
+		similarities=0		
 		for (( i=0; i<${#userWord}; i=i+1 )); do
 			letterUserWord=${userWord:i:1}
 			letterCleanWord=${cleanWord:i:1}
@@ -38,12 +33,15 @@ searchVariations () {
 				similarities=$((similarities+1))
 			fi
 
-			if [[ $similarities -ge $((${#userWord}-$differences)) ]]; then
-				if [[ ! " ${matches[*]} " =~ [[:space:]]${word}[[:space:]] ]]; then
-					matches+=($word)
-				fi
-			fi
 		done
+
+		# similarities + differences = length of the word
+		# differences = length of the word - similarities
+		if [[ $differences -ge $((${#userWord}-${similarities})) ]]; then
+			if [[ ! " ${matches[*]} " =~ [[:space:]]${word}[[:space:]] ]]; then
+				matches+=($word)
+			fi
+		fi
 	done
 
 	echo -e "${GREEN}The variations are: ${matches[*]}${NC}"
