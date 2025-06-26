@@ -26,8 +26,16 @@ searchVariations () {
 		cleanWord="$(echo $word | perl -p -e 's/[^a-zA-Z\d]//g')"
 		cleanUserWord="$(echo $userWord | perl -p -e 's/[^a-zA-Z\d]//g')"
 
-		similarities=0		
-		for (( i=0; i<${#cleanUserWord}; i=i+1 )); do
+		if [[ ${#cleanUserWord} -ge ${#cleanWord} ]]; then
+			longestWord="$cleanUserWord"
+			shortestWord="$cleanWord"
+		elif [[ ${#cleanUserWord} -lt ${#cleanWord} ]]; then
+			longestWord="$cleanWord"
+			shortestWord="$cleanUserWord"
+		fi
+
+		similarities=0
+		for (( i=0; i<${#shortestWord}; i=i+1 )); do
 			letterCleanUserWord=${cleanUserWord:i:1}
 			letterCleanWord=${cleanWord:i:1}
 
@@ -38,7 +46,7 @@ searchVariations () {
 
 		# similarities + differences = length of the word
 		# differences = length of the word - similarities
-		if [[ $differences -ge $((${#cleanUserWord}-${similarities})) ]]; then
+		if [[ $differences -ge $((${#longestWord}-${similarities})) ]]; then
 			if [[ ! " ${matches[*]} " =~ [[:space:]]${word}[[:space:]] ]]; then
 				matches+=($word)
 			fi
