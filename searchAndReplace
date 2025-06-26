@@ -8,7 +8,7 @@ NC='\033[0m' # No color
 
 searchVariations () {
 	read -p "Enter a word to search variations > " userWord
-	read -p "Enter the number of differences allowed > " differences
+	read -p "Enter the number of differences allowed > " userDifferences
 
 	echo "Processing..."
 
@@ -20,7 +20,7 @@ searchVariations () {
 
 	IFS=$'\n' read -a wordsArray -d '' <<< "$words"
 
-	matches=()
+	declare -A matches
 	for word in "${wordsArray[@]}"
 	do
 		cleanWord="$(echo $word | perl -p -e 's/[^a-zA-Z\d]//g')"
@@ -46,14 +46,19 @@ searchVariations () {
 
 		# similarities + differences = length of the word
 		# differences = length of the word - similarities
-		if [[ $differences -ge $((${#longestWord}-${similarities})) ]]; then
-			if [[ ! " ${matches[*]} " =~ [[:space:]]${word}[[:space:]] ]]; then
-				matches+=($word)
+		differences=$((${#longestWord}-${similarities}))
+
+		if [[ $userDifferences -ge $differences ]]; then
+			if [[ ! " ${!matches[@]} " =~ [[:space:]]${word}[[:space:]] ]]; then
+				matches["$word"]="$differences"
 			fi
 		fi
 	done
 
-	sortedMatches="$(echo "${matches[*]}" | perl -p -e 's/ /\n/g' | awk '{ print length, $0 }' | sort -n | cut -d" " -f2 | perl -p -e 's/\n/ /g')"
+	words="$(echo "${!matches[@]}" | perl -p -e 's/ /\n/g')"
+	differences="$(echo "${matches[@]}" | perl -p -e 's/ /\n/g')"
+
+	sortedMatches="$(paste <(echo "$words") <(echo "$differences") | sort -n -k 2 | cut -f 1 | perl -p -e 's/\n/ /g')"
 
 	echo -e "${GREEN}The variations are: ${sortedMatches}${NC}"
 	read -p "Press enter to return to the menu "
