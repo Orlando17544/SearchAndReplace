@@ -79,7 +79,7 @@ searchAndReplace () {
 	hasErrors="true"
 	while [ "$hasErrors" = "true" ]
 	do
-		find . -iname '*' -type d -not -path "./searchAndReplace" -exec rename "s/$textToReplace/$replacement/g" {} \; 2> /dev/null
+		find . -iname '*' -type d -not -path "./searchAndReplace" -exec rename "s/\Q$textToReplace\E/$replacement/g" {} \; 2> /dev/null
 
 		if [[ "$?" -eq 0 ]]; then
 			hasErrors="false"
@@ -90,7 +90,7 @@ searchAndReplace () {
 	hasErrors="true"
 	while [ "$hasErrors" = "true" ]
 	do
-		find . -iname '*' -type f -not -path "./searchAndReplace" -exec rename "s/$textToReplace/$replacement/g" {} \; 2> /dev/null
+		find . -iname '*' -type f -not -path "./searchAndReplace" -exec rename "s/\Q$textToReplace\E/$replacement/g" {} \; 2> /dev/null
 
 		if [[ "$?" -eq 0 ]]; then
 			hasErrors="false"
@@ -101,7 +101,7 @@ searchAndReplace () {
 	hasErrors="true"
 	while [ "$hasErrors" = "true" ]
 	do
-		find . -iname '*' -type f -not -path "./searchAndReplace" -exec perl -p -i -e "s/$textToReplace/$replacement/g" {} \; 2> /dev/null
+		find . -iname '*' -type f -not -path "./searchAndReplace" -exec perl -p -i -e "s/\Q$textToReplace\E/$replacement/g" {} \; 2> /dev/null
 
 		if [[ "$?" -eq 0 ]]; then
 			hasErrors="false"
