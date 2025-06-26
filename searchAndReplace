@@ -45,7 +45,9 @@ searchVariations () {
 		fi
 	done
 
-	echo -e "${GREEN}The variations are: ${matches[*]}${NC}"
+	sortedMatches="$(echo "${matches[*]}" | perl -p -e 's/ /\n/g' | awk '{ print length, $0 }' | sort -n | cut -d" " -f2 | perl -p -e 's/\n/ /g')"
+
+	echo -e "${GREEN}The variations are: ${sortedMatches}${NC}"
 	read -p "Press enter to return to the menu "
 }
 
